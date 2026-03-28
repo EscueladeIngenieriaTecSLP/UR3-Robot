@@ -3,9 +3,11 @@
   <head>
     <title>UR3 WebAR con sonido</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
     <!-- Librerías principales -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
+
     <style>
       body, html {
         margin: 0;
@@ -15,7 +17,7 @@
         font-family: system-ui, sans-serif;
       }
 
-      /* Pantalla inicial para pedir interacción del usuario */
+      /* Pantalla inicial */
       #overlay {
         position: fixed;
         inset: 0;
@@ -45,7 +47,7 @@
   </head>
 
   <body>
-    <!-- Overlay de inicio -->
+    <!-- Overlay -->
     <div id="overlay">
       <p>🎧 Toca para iniciar el video con sonido</p>
       <button id="startBtn">Reproducir</button>
@@ -53,8 +55,8 @@
 
     <!-- Escena AR -->
     <a-scene embedded arjs>
+
       <a-assets>
-        <!-- IMPORTANTE: ya no lleva muted -->
         <video 
           id="ur3video"
           src="ur3-video.mp4"
@@ -65,26 +67,29 @@
         </video>
       </a-assets>
 
-      <a-marker type="pattern" url="marker.patt" id="marker">
+      <!-- Marker (se mantiene pero ya no contiene el video) -->
+      <a-marker type="pattern" url="marker.patt" id="marker"></a-marker>
+
+      <!-- Cámara con video FIJO -->
+      <a-entity camera>
+
         <a-video
           src="#ur3video"
-          width="1"
-          height="2"
-          position="0 0 0"
-          rotation="-90 0 0"
-          loop="true">
+          width="20"
+          height="12"
+          position="0 0 -1.5">
         </a-video>
 
         <a-text
           value="UR3: 6 DOF | 3kg payload | 500mm reach"
-          position="0 1.2 0"
-          rotation="-90 0 0"
-          scale="0.4 0.4 0.4"
+          position="0 -2 -1.5"
+          align="center"
+          scale="1.5 1.5 1.5"
           color="red">
         </a-text>
-      </a-marker>
 
-      <a-entity camera></a-entity>
+      </a-entity>
+
     </a-scene>
 
     <script>
@@ -93,12 +98,12 @@
       const overlay = document.getElementById('overlay');
       const startBtn = document.getElementById('startBtn');
 
-      // Flags necesarios
+      // Compatibilidad móvil
       video.playsInline = true;
       video.setAttribute('playsinline', '');
       video.setAttribute('webkit-playsinline', '');
 
-      // Reproducir el video con audio cuando el usuario toque el botón
+      // Botón para iniciar con audio
       startBtn.addEventListener('click', async () => {
         try {
           await video.play();
@@ -109,17 +114,17 @@
         }
       });
 
-      // Al detectar el marcador, aseguramos que siga reproduciendo
+      // (Opcional) Mantener reproducción si detecta marker
       marker.addEventListener('markerFound', () => {
         if (video.paused) {
-          video.play().catch(err => console.warn('Error al reproducir:', err));
+          video.play().catch(err => console.warn(err));
         }
       });
 
-      // Pausa el video al perder el marcador
       marker.addEventListener('markerLost', () => {
         video.pause();
       });
     </script>
+
   </body>
 </html>

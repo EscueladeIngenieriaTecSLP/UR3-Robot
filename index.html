@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>UR3 WebAR Fullscreen</title>
+    <title>UR3 WebAR con sonido</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-
-    <!-- Librerías -->
+    <!-- Librerías principales -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
-
     <style>
       body, html {
         margin: 0;
@@ -17,11 +15,11 @@
         font-family: system-ui, sans-serif;
       }
 
-      /* Overlay inicial */
+      /* Pantalla inicial para pedir interacción del usuario */
       #overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.9);
+        background: rgba(0, 0, 0, 0.85);
         color: white;
         display: flex;
         flex-direction: column;
@@ -34,9 +32,9 @@
         background-color: #ff3333;
         color: white;
         border: none;
-        padding: 14px 24px;
+        padding: 12px 20px;
         font-size: 18px;
-        border-radius: 10px;
+        border-radius: 8px;
         cursor: pointer;
       }
 
@@ -47,7 +45,7 @@
   </head>
 
   <body>
-    <!-- Overlay -->
+    <!-- Overlay de inicio -->
     <div id="overlay">
       <p>🎧 Toca para iniciar el video con sonido</p>
       <button id="startBtn">Reproducir</button>
@@ -55,8 +53,8 @@
 
     <!-- Escena AR -->
     <a-scene embedded arjs>
-
       <a-assets>
+        <!-- IMPORTANTE: ya no lleva muted -->
         <video 
           id="ur3video"
           src="ur3-video.mp4"
@@ -67,51 +65,61 @@
         </video>
       </a-assets>
 
-      <!-- Cámara -->
-      <a-entity camera>
-
-        <!-- VIDEO GRANDE (tipo fullscreen) -->
+      <a-marker type="pattern" url="marker.patt" id="marker">
         <a-video
           src="#ur3video"
-          width="16"
-          height="9"
-          position="0 0 -4">
+          width="1"
+          height="2"
+          position="0 0 0"
+          rotation="-90 0 0"
+          loop="true">
         </a-video>
 
-        <!-- TEXTO -->
         <a-text
           value="UR3: 6 DOF | 3kg payload | 500mm reach"
-          position="0 -2 -4"
-          align="center"
-          scale="1.5 1.5 1.5"
+          position="0 1.2 0"
+          rotation="-90 0 0"
+          scale="0.4 0.4 0.4"
           color="red">
         </a-text>
+      </a-marker>
 
-      </a-entity>
-
+      <a-entity camera></a-entity>
     </a-scene>
 
     <script>
       const video = document.getElementById('ur3video');
+      const marker = document.getElementById('marker');
       const overlay = document.getElementById('overlay');
       const startBtn = document.getElementById('startBtn');
 
-      // Compatibilidad móvil
+      // Flags necesarios
       video.playsInline = true;
       video.setAttribute('playsinline', '');
       video.setAttribute('webkit-playsinline', '');
 
-      // Botón para iniciar con audio
+      // Reproducir el video con audio cuando el usuario toque el botón
       startBtn.addEventListener('click', async () => {
         try {
           await video.play();
           overlay.style.display = 'none';
           console.log('🎬 Video con sonido reproducido');
         } catch (err) {
-          alert('Error al reproducir: ' + err.message);
+          alert('No se pudo reproducir el video con sonido: ' + err.message);
         }
       });
-    </script>
 
+      // Al detectar el marcador, aseguramos que siga reproduciendo
+      marker.addEventListener('markerFound', () => {
+        if (video.paused) {
+          video.play().catch(err => console.warn('Error al reproducir:', err));
+        }
+      });
+
+      // Pausa el video al perder el marcador
+      marker.addEventListener('markerLost', () => {
+        video.pause();
+      });
+    </script>
   </body>
 </html>

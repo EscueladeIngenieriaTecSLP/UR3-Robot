@@ -17,7 +17,7 @@
         font-family: system-ui, sans-serif;
       }
 
-      /* Pantalla inicial */
+      /* Overlay inicial */
       #overlay {
         position: fixed;
         inset: 0;
@@ -43,6 +43,18 @@
       #overlay button:hover {
         background-color: #ff5555;
       }
+
+      /* VIDEO FULLSCREEN REAL */
+      #fullscreenVideo {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: 5;
+        display: none;
+      }
     </style>
   </head>
 
@@ -53,9 +65,17 @@
       <button id="startBtn">Reproducir</button>
     </div>
 
-    <!-- Escena AR -->
-    <a-scene embedded arjs>
+    <!-- VIDEO FULLSCREEN -->
+    <video 
+      id="fullscreenVideo"
+      src="ur3-video.mp4"
+      playsinline
+      webkit-playsinline
+      loop>
+    </video>
 
+    <!-- Escena AR (se mantiene igual) -->
+    <a-scene embedded arjs>
       <a-assets>
         <video 
           id="ur3video"
@@ -67,33 +87,13 @@
         </video>
       </a-assets>
 
-      <!-- Marker (se mantiene pero ya no contiene el video) -->
       <a-marker type="pattern" url="marker.patt" id="marker"></a-marker>
 
-      <!-- Cámara con video FIJO -->
-      <a-entity camera>
-
-        <a-video
-          src="#ur3video"
-          width="20"
-          height="12"
-          position="0 0 -1.5">
-        </a-video>
-
-        <a-text
-          value="UR3: 6 DOF | 3kg payload | 500mm reach"
-          position="0 -2 -1.5"
-          align="center"
-          scale="1.5 1.5 1.5"
-          color="red">
-        </a-text>
-
-      </a-entity>
-
+      <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      const video = document.getElementById('ur3video');
+      const video = document.getElementById('fullscreenVideo');
       const marker = document.getElementById('marker');
       const overlay = document.getElementById('overlay');
       const startBtn = document.getElementById('startBtn');
@@ -103,18 +103,19 @@
       video.setAttribute('playsinline', '');
       video.setAttribute('webkit-playsinline', '');
 
-      // Botón para iniciar con audio
+      // Botón para iniciar video fullscreen
       startBtn.addEventListener('click', async () => {
         try {
           await video.play();
+          video.style.display = 'block';
           overlay.style.display = 'none';
-          console.log('🎬 Video con sonido reproducido');
+          console.log('🎬 Video fullscreen con sonido');
         } catch (err) {
-          alert('No se pudo reproducir el video con sonido: ' + err.message);
+          alert('No se pudo reproducir el video: ' + err.message);
         }
       });
 
-      // (Opcional) Mantener reproducción si detecta marker
+      // Opcional: controlar con marker
       marker.addEventListener('markerFound', () => {
         if (video.paused) {
           video.play().catch(err => console.warn(err));

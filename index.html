@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <title>UR3 WebAR con sonido (2 videos)</title>
     <title>UR3 WebAR con sonido</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-
+    <!-- Librerías -->
     <!-- Librerías principales -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.js"></script>
-
     <style>
+      body, html { margin:0; padding:0; overflow:hidden; touch-action:none; font-family:system-ui, sans-serif; }
       body, html {
         margin: 0;
         padding: 0;
@@ -17,8 +18,10 @@
         font-family: system-ui, sans-serif;
       }
 
-      /* Overlay inicial */
+      /* Pantalla inicial para pedir interacción del usuario */
       #overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,.85); color:#fff;
+        display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999;
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.85);
@@ -31,6 +34,7 @@
       }
 
       #overlay button {
+        background:#ff3333; color:#fff; border:none; padding:12px 20px; font-size:18px; border-radius:8px; cursor:pointer;
         background-color: #ff3333;
         color: white;
         border: none;
@@ -43,40 +47,36 @@
       #overlay button:hover {
         background-color: #ff5555;
       }
-
-      /* VIDEO FULLSCREEN REAL */
-      #fullscreenVideo {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        object-fit: cover;
-        z-index: 5;
-        display: none;
-      }
+      #overlay button:hover { background:#ff5555; }
     </style>
   </head>
 
   <body>
-    <!-- Overlay -->
+    <!-- Overlay para habilitar audio -->
+    <!-- Overlay de inicio -->
     <div id="overlay">
+      <p>🎧 Toca para iniciar los videos con sonido</p>
       <p>🎧 Toca para iniciar el video con sonido</p>
       <button id="startBtn">Reproducir</button>
     </div>
 
-    <!-- VIDEO FULLSCREEN -->
-    <video 
-      id="fullscreenVideo"
-      src="ur3-video.mp4"
-      playsinline
-      webkit-playsinline
-      loop>
-    </video>
-
-    <!-- Escena AR (se mantiene igual) -->
+    <!-- Escena AR -->
     <a-scene embedded arjs>
       <a-assets>
+        <!-- Video 1 (UR3) mantiene tus nombres -->
+        <video id="ur3video"
+               src="ur3-video.mp4"
+               preload="auto"
+               playsinline webkit-playsinline
+               loop></video>
+
+        <!-- Video 2 (ABB) usa tus nombres del repo (espacios codificados) -->
+        <video id="abbVideo"
+               src="ABB%20VIDEO%20EDITADO.mp4"
+               preload="auto"
+               playsinline webkit-playsinline
+               loop></video>
+        <!-- IMPORTANTE: ya no lleva muted -->
         <video 
           id="ur3video"
           src="ur3-video.mp4"
@@ -87,45 +87,101 @@
         </video>
       </a-assets>
 
-      <a-marker type="pattern" url="marker.patt" id="marker"></a-marker>
+      <!-- Marcador 1: usa marker.patt (tu actual) -->
+      <a-marker type="pattern" url="marker.patt" id="markerUR3">
+        <a-video src="#ur3video" width="1" height="2" position="0 0 0" rotation="-90 0 0" loop="true"></a-video>
+        <a-text value="UR3: 6 DOF | 3kg | 500mm reach"
+                position="0 1.2 0" rotation="-90 0 0" scale="0.4 0.4 0.4" color="red"></a-text>
+      </a-marker>
+      <a-marker type="pattern" url="marker.patt" id="marker">
+        <a-video
+          src="#ur3video"
+          width="1"
+          height="2"
+          position="0 0 0"
+          rotation="-90 0 0"
+          loop="true">
+        </a-video>
+
+      <!-- Marcador 2: ABB con pattern-image2.patt -->
+      <a-marker type="pattern" url="pattern-image2.patt" id="markerABB">
+        <a-video src="#abbVideo" width="1" height="2" position="0 0 0" rotation="-90 0 0" loop="true"></a-video>
+        <a-text value="ABB IRB 140"
+                position="0 1.2 0" rotation="-90 0 0" scale="0.4 0.4 0.4" color="orange"></a-text>
+        <a-text
+          value="UR3: 6 DOF | 3kg payload | 500mm reach"
+          position="0 1.2 0"
+          rotation="-90 0 0"
+          scale="0.4 0.4 0.4"
+          color="red">
+        </a-text>
+      </a-marker>
 
       <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      const video = document.getElementById('fullscreenVideo');
+      // Referencias
+      const overlay   = document.getElementById('overlay');
+      const startBtn  = document.getElementById('startBtn');
+      const ur3Video  = document.getElementById('ur3video');
+      const abbVideo  = document.getElementById('abbVideo');
+      const markerUR3 = document.getElementById('markerUR3');
+      const markerABB = document.getElementById('markerABB');
+      const video = document.getElementById('ur3video');
       const marker = document.getElementById('marker');
       const overlay = document.getElementById('overlay');
       const startBtn = document.getElementById('startBtn');
 
-      // Compatibilidad móvil
+      // Asegurar flags inline (iOS/Android)
+      [ur3Video, abbVideo].forEach(v=>{
+        v.playsInline = true;
+        v.setAttribute('playsinline','');
+        v.setAttribute('webkit-playsinline','');
+      });
+      // Flags necesarios
       video.playsInline = true;
       video.setAttribute('playsinline', '');
       video.setAttribute('webkit-playsinline', '');
 
-      // Botón para iniciar video fullscreen
+      // Reproducir con audio tras interacción del usuario
+      // Reproducir el video con audio cuando el usuario toque el botón
       startBtn.addEventListener('click', async () => {
         try {
+          await Promise.all([ur3Video.play(), abbVideo.play()]);
           await video.play();
-          video.style.display = 'block';
           overlay.style.display = 'none';
-          console.log('🎬 Video fullscreen con sonido');
+          console.log('🎬 Video con sonido reproducido');
         } catch (err) {
-          alert('No se pudo reproducir el video: ' + err.message);
+          alert('No se pudo iniciar con sonido: ' + err.message);
+          alert('No se pudo reproducir el video con sonido: ' + err.message);
         }
       });
 
-      // Opcional: controlar con marker
+      // Control por marcador: cada uno reproduce/pausa su video
+      markerUR3.addEventListener('markerFound', () => { if (ur3Video.paused) ur3Video.play().catch(()=>{}); });
+      markerUR3.addEventListener('markerLost',  () => { ur3Video.pause(); });
+
+      markerABB.addEventListener('markerFound', () => { if (abbVideo.paused) abbVideo.play().catch(()=>{}); });
+      markerABB.addEventListener('markerLost',  () => { abbVideo.pause(); });
+      // Al detectar el marcador, aseguramos que siga reproduciendo
       marker.addEventListener('markerFound', () => {
         if (video.paused) {
-          video.play().catch(err => console.warn(err));
+          video.play().catch(err => console.warn('Error al reproducir:', err));
         }
       });
 
+      // OPCIONAL: que solo suene el que está visible
+      /*
+      markerUR3.addEventListener('markerFound', () => { abbVideo.muted = true; ur3Video.muted = false; });
+      markerABB.addEventListener('markerFound', () => { ur3Video.muted = true; abbVideo.muted = false; });
+      markerUR3.addEventListener('markerLost',  () => { ur3Video.muted = true; });
+      markerABB.addEventListener('markerLost',  () => { abbVideo.muted = true; });
+      */
+      // Pausa el video al perder el marcador
       marker.addEventListener('markerLost', () => {
         video.pause();
       });
     </script>
-
   </body>
 </html>
